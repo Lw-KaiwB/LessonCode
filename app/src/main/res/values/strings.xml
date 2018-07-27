@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LessonCode</string>
+    <string name="title_scalable_image_view">ScalableImageView</string>
+    <string name="message_scalable_image_view">双击放大、缩小，放大滑动</string>
 </resources>
