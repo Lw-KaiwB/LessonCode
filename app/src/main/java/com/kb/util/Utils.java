@@ -22,8 +22,6 @@ public class Utils {
         options.inJustDecodeBounds = false;
         options.inDensity = options.outWidth;
         options.inTargetDensity = size;
-        Bitmap bitmap = BitmapFactory.decodeResource(res, resId, options);
-        return bitmap;
-
+        return BitmapFactory.decodeResource(res, resId, options);
     }
 }

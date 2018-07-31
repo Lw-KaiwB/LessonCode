@@ -4,11 +4,9 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.support.annotation.AnimatorRes;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -127,8 +125,8 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     public boolean onDoubleTap(MotionEvent e) {
         isBig = !isBig;
         if (isBig) {
-            offsetX = -(e.getX()-getWidth()/2);
-            offsetY = -(e.getY() - getHeight()/2);
+            offsetX = -(e.getX() - getWidth() / 2);
+            offsetY = -(e.getY() - getHeight() / 2);
             getScaleAnimator().start();
         } else {
             getScaleAnimator().reverse();
