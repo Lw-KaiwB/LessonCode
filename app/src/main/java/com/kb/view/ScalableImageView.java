@@ -1,5 +1,8 @@
 package com.kb.view;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -12,24 +15,31 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.OverScroller;
 
 import com.kb.R;
 import com.kb.util.Utils;
 
-public class ScalableImageView extends View implements GestureDetector.OnDoubleTapListener, GestureDetector.OnGestureListener {
+public class ScalableImageView extends View implements GestureDetector.OnDoubleTapListener, GestureDetector.OnGestureListener, Runnable {
     private String TAG = this.getClass().getSimpleName();
 
     private Paint mPaint;
     private Bitmap mBitmap;
     private GestureDetector mGestureDetector;
     private final int IMAGE_SIZE = 400;
+    private final int SCALE_OVER_FACTOR = 2;
     private float offsetX;
     private float offsetY;
+    private float orignalOffsetX;
+    private float orignalOffsetY;
     private float imageWidth;
     private float imageHeight;
     private float smallScale;
     private float bigScale;
     private boolean isBig = false;
+    private float scalingFraction;
+    private ObjectAnimator scaleAnimator;
+    private OverScroller mOverScaller;
 
     public ScalableImageView(Context context) {
         this(context, null);
@@ -41,6 +51,16 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mGestureDetector = new GestureDetector(context, this);
         mGestureDetector.setOnDoubleTapListener(this);
+        mOverScaller = new OverScroller(context);
+    }
+
+    public float getScalingFraction() {
+        return scalingFraction;
+    }
+
+    public void setScalingFraction(float scalingFraction) {
+        this.scalingFraction = scalingFraction;
+        invalidate();
     }
 
     @Override
@@ -69,6 +89,17 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+        if (isBig) {
+            offsetX -= distanceX;
+            offsetY -= distanceY;
+
+            offsetX = Math.min(offsetX, (imageWidth * bigScale - getWidth()) / 2);
+            offsetX = Math.max(offsetX, -(imageWidth * bigScale - getWidth()) / 2);
+
+            offsetY = Math.min(offsetY, (imageHeight * bigScale - getHeight()) / 2);
+            offsetY = Math.max(offsetY, -(imageHeight * bigScale - getHeight()) / 2);
+            invalidate();
+        }
         return false;
     }
 
@@ -79,6 +110,11 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        mOverScaller.fling((int) offsetX, (int) offsetY, (int) velocityX, (int) velocityY,
+                (int) (getWidth() - imageWidth * bigScale) / 2, (int) (imageWidth * bigScale - getWidth()) / 2,
+                (int) (getHeight() - imageHeight * bigScale) / 2, (int) (imageHeight * bigScale - getHeight()) / 2,
+                0, 0);
+        postOnAnimation(this);
         return false;
     }
 
@@ -91,9 +127,11 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     public boolean onDoubleTap(MotionEvent e) {
         isBig = !isBig;
         if (isBig) {
-
+            offsetX = -(e.getX()-getWidth()/2);
+            offsetY = -(e.getY() - getHeight()/2);
+            getScaleAnimator().start();
         } else {
-
+            getScaleAnimator().reverse();
         }
         return false;
     }
@@ -106,21 +144,34 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        offsetX = (getWidth() - mBitmap.getWidth()) / 2;
-        offsetY = (getHeight() - mBitmap.getHeight()) / 2;
+
         imageWidth = mBitmap.getWidth();
         imageHeight = mBitmap.getHeight();
+        orignalOffsetX = (getWidth() - imageWidth) / 2;
+        orignalOffsetY = (getHeight() - imageHeight) / 2;
 
-        Log.e(TAG, "imageWidth/imageHeight=" + (imageWidth / imageHeight) + " getWidth()/getHeight()=" + ((float) getWidth() / getHeight()));
         if (imageWidth / imageHeight > (float) getWidth() / getHeight()) {
             smallScale = getWidth() / imageWidth;
-            bigScale = getHeight() / imageHeight;
-            Log.e(TAG, "smallScale=" + smallScale + " bigScale=" + bigScale);
+            bigScale = getHeight() / imageHeight * SCALE_OVER_FACTOR;
         } else {
             smallScale = getHeight() / imageHeight;
-            bigScale = getWidth() / imageWidth;
-            Log.e(TAG, "smallScale1=" + smallScale + " bigScale1=" + bigScale);
+            bigScale = getWidth() / imageWidth * SCALE_OVER_FACTOR;
         }
+    }
+
+    private ObjectAnimator getScaleAnimator() {
+        if (scaleAnimator == null) {
+            scaleAnimator = ObjectAnimator.ofFloat(this, "scalingFraction", 0, 1);
+            scaleAnimator.setDuration(300);
+            scaleAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation, boolean isReverse) {
+                    if (isReverse)
+                        offsetX = offsetY = 0;
+                }
+            });
+        }
+        return scaleAnimator;
     }
 
     @Override
@@ -131,7 +182,21 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.translate(offsetX, offsetY);
+        float scale = smallScale + (bigScale - smallScale) * scalingFraction;
+        canvas.translate(offsetX * scalingFraction, offsetY * scalingFraction);
+        canvas.scale(scale, scale, getWidth() / 2, getHeight() / 2);
+        canvas.translate(orignalOffsetX, orignalOffsetY);
         canvas.drawBitmap(mBitmap, 0, 0, mPaint);
+    }
+
+    @Override
+    public void run() {
+        if (mOverScaller.computeScrollOffset()) {
+            offsetY = mOverScaller.getCurrY();
+            offsetX = mOverScaller.getCurrX();
+            invalidate();
+            postOnAnimation(this);
+        }
+
     }
 }
