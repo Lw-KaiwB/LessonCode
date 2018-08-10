@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.OverScroller;
 
 import com.kb.R;
@@ -28,8 +29,8 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     private final int SCALE_OVER_FACTOR = 2;
     private float offsetX;
     private float offsetY;
-    private float orignalOffsetX;
-    private float orignalOffsetY;
+    private float originalOffsetX;
+    private float originalOffsetY;
     private float imageWidth;
     private float imageHeight;
     private float smallScale;
@@ -37,7 +38,7 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
     private boolean isBig = false;
     private float scalingFraction;
     private ObjectAnimator scaleAnimator;
-    private OverScroller mOverScaller;
+    private OverScroller mOverScroller;
 
     public ScalableImageView(Context context) {
         this(context, null);
@@ -49,7 +50,7 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mGestureDetector = new GestureDetector(context, this);
         mGestureDetector.setOnDoubleTapListener(this);
-        mOverScaller = new OverScroller(context);
+        mOverScroller = new OverScroller(context);
     }
 
     public float getScalingFraction() {
@@ -108,7 +109,7 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        mOverScaller.fling((int) offsetX, (int) offsetY, (int) velocityX, (int) velocityY,
+        mOverScroller.fling((int) offsetX, (int) offsetY, (int) velocityX, (int) velocityY,
                 (int) (getWidth() - imageWidth * bigScale) / 2, (int) (imageWidth * bigScale - getWidth()) / 2,
                 (int) (getHeight() - imageHeight * bigScale) / 2, (int) (imageHeight * bigScale - getHeight()) / 2,
                 0, 0);
@@ -145,8 +146,8 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
 
         imageWidth = mBitmap.getWidth();
         imageHeight = mBitmap.getHeight();
-        orignalOffsetX = (getWidth() - imageWidth) / 2;
-        orignalOffsetY = (getHeight() - imageHeight) / 2;
+        originalOffsetX = (getWidth() - imageWidth) / 2;
+        originalOffsetY = (getHeight() - imageHeight) / 2;
 
         if (imageWidth / imageHeight > (float) getWidth() / getHeight()) {
             smallScale = getWidth() / imageWidth;
@@ -183,15 +184,15 @@ public class ScalableImageView extends View implements GestureDetector.OnDoubleT
         float scale = smallScale + (bigScale - smallScale) * scalingFraction;
         canvas.translate(offsetX * scalingFraction, offsetY * scalingFraction);
         canvas.scale(scale, scale, getWidth() / 2, getHeight() / 2);
-        canvas.translate(orignalOffsetX, orignalOffsetY);
+        canvas.translate(originalOffsetX, originalOffsetY);
         canvas.drawBitmap(mBitmap, 0, 0, mPaint);
     }
 
     @Override
     public void run() {
-        if (mOverScaller.computeScrollOffset()) {
-            offsetY = mOverScaller.getCurrY();
-            offsetX = mOverScaller.getCurrX();
+        if (mOverScroller.computeScrollOffset()) {
+            offsetY = mOverScroller.getCurrY();
+            offsetX = mOverScroller.getCurrX();
             invalidate();
             postOnAnimation(this);
         }

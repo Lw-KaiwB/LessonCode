@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_secure_connect_scan"
+        android:icon="@drawable/ic_action_device_access_bluetooth_searching"
+        android:title="@string/secure_connect"
+        android:visible="true"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_insecure_connect_scan"
+        android:title="@string/insecure_connect"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_discoverable"
+        android:title="@string/discoverable"
+        app:showAsAction="ifRoom" />
+
+</menu>
